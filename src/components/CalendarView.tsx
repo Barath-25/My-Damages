@@ -33,8 +33,8 @@ export default function CalendarView({ transactions }: CalendarViewProps) {
       </div>
 
       <div className="grid grid-cols-7 gap-1 md:gap-3">
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-          <div key={day} className="py-2 text-center text-[8px] md:text-[10px] font-black text-brand-dark/40 uppercase tracking-[0.1em] md:tracking-[0.2em]">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+          <div key={`${day}-${index}`} className="py-2 text-center text-[8px] md:text-[10px] font-black text-brand-dark/40 uppercase tracking-[0.1em] md:tracking-[0.2em]">
             {day}
           </div>
         ))}
