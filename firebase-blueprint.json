@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information and settings.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "securityPin": { "type": "string" },
+        "useBiometrics": { "type": "boolean" },
+        "setupComplete": { "type": "boolean" }
+      },
+      "required": ["displayName", "setupComplete"]
+    },
+    "Account": {
+      "title": "Account",
+      "description": "A bank account or wallet.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "balance": { "type": "number" },
+        "uid": { "type": "string" }
+      },
+      "required": ["name", "uid"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A record of income or expense.",
+      "type": "object",
+      "properties": {
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["income", "expense", "transfer"] },
+        "paymentMethod": { "type": "string", "enum": ["upi", "cash"] },
+        "category": { "type": "string" },
+        "otherCategory": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "description": { "type": "string" },
+        "uid": { "type": "string" },
+        "accountId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["amount", "type", "paymentMethod", "category", "date", "uid", "accountId", "createdAt"]
+    },
+    "WishlistItem": {
+      "title": "WishlistItem",
+      "description": "An item the user wants to buy.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "targetAmount": { "type": "number" },
+        "savedAmount": { "type": "number" },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "targetAmount", "savedAmount", "uid", "createdAt"]
+    },
+    "MonthlyBudget": {
+      "title": "MonthlyBudget",
+      "description": "Budget for a specific month.",
+      "type": "object",
+      "properties": {
+        "month": { "type": "string" },
+        "amount": { "type": "number" },
+        "uid": { "type": "string" }
+      },
+      "required": ["month", "amount", "uid"]
+    }
+  },
+  "firestore": {
+    "users": { "schema": "UserProfile", "description": "User profiles." },
+    "accounts": { "schema": "Account", "description": "User bank accounts." },
+    "transactions": { "schema": "Transaction", "description": "User transactions." },
+    "wishlist": { "schema": "WishlistItem", "description": "User wishlist items." },
+    "budgets": { "schema": "MonthlyBudget", "description": "User monthly budgets." }
+  }
+}
