@@ -158,7 +158,7 @@ export default function TransactionForm({ accounts, selectedAccountId, onClose }
         <div>
           <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-3">Category</label>
           <div className="grid grid-cols-2 gap-3">
-            {CATEGORIES[type].map((cat) => (
+            {(CATEGORIES[type as keyof typeof CATEGORIES] || []).map((cat: string) => (
               <button
                 key={cat}
                 type="button"
