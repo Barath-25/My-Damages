@@ -60,7 +60,7 @@ export default function TransactionList({ transactions }: TransactionListProps) 
                 }`}>
                   <div className="flex items-center justify-end gap-1">
                     {t.type === 'income' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
-                    ${t.amount.toLocaleString()}
+                    ₹{t.amount.toLocaleString()}
                   </div>
                 </td>
                 <td className="px-8 py-6 text-center">

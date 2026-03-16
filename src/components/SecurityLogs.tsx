@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Fingerprint, Delete } from 'lucide-react';
+import { Shield, Delete } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-interface SecurityLockProps {
+interface SecurityLogsProps {
   correctPin: string;
-  useBiometrics: boolean;
   onUnlock: () => void;
 }
 
-export default function SecurityLock({ correctPin, useBiometrics, onUnlock }: SecurityLockProps) {
+export default function SecurityLogs({ correctPin, onUnlock }: SecurityLogsProps) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
 
@@ -25,14 +24,6 @@ export default function SecurityLock({ correctPin, useBiometrics, onUnlock }: Se
       }
     }
   }, [pin, correctPin, onUnlock]);
-
-  const handleBiometric = async () => {
-    if (window.PublicKeyCredential) {
-      // Mock biometric success for demo purposes
-      // In a real app, you'd use WebAuthn API
-      onUnlock();
-    }
-  };
 
   const addDigit = (digit: string) => {
     if (pin.length < 4) setPin(prev => prev + digit);
@@ -77,16 +68,7 @@ export default function SecurityLock({ correctPin, useBiometrics, onUnlock }: Se
               {digit}
             </button>
           ))}
-          <div className="flex items-center justify-center">
-            {useBiometrics && (
-              <button
-                onClick={handleBiometric}
-                className="w-16 h-16 rounded-2xl bg-brand-primary/10 text-brand-primary flex items-center justify-center hover:bg-brand-primary/20 active:scale-95 transition-all"
-              >
-                <Fingerprint className="w-8 h-8" />
-              </button>
-            )}
-          </div>
+          <div className="flex items-center justify-center" />
           <button
             onClick={() => addDigit('0')}
             className="w-16 h-16 rounded-2xl bg-white border border-brand-accent/20 text-xl font-bold text-brand-dark hover:bg-brand-accent/10 active:scale-95 transition-all shadow-sm"

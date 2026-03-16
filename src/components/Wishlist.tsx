@@ -182,8 +182,8 @@ export default function Wishlist() {
 
               <h3 className="text-xl font-black text-brand-dark mb-1">{item.name}</h3>
               <div className="flex justify-between text-xs font-bold text-brand-dark/40 uppercase tracking-widest mb-4">
-                <span>Saved: ${item.savedAmount.toLocaleString()}</span>
-                <span>Target: ${item.targetAmount.toLocaleString()}</span>
+                <span>Saved: ₹{item.savedAmount.toLocaleString()}</span>
+                <span>Target: ₹{item.targetAmount.toLocaleString()}</span>
               </div>
 
               <div className="h-3 bg-brand-bg rounded-full overflow-hidden mb-6">
@@ -243,13 +243,13 @@ export default function Wishlist() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Target Amount ($)</label>
+                  <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Target Amount (₹)</label>
                   <input
                     type="number"
                     required
                     value={targetAmount}
                     onChange={(e) => setTargetAmount(e.target.value)}
-                    placeholder="0.00"
+                    placeholder="₹0.00"
                     className="w-full px-4 py-3 bg-brand-bg/30 border border-brand-accent/20 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all"
                   />
                 </div>
@@ -296,13 +296,13 @@ export default function Wishlist() {
               <p className="text-brand-dark/50 font-medium mb-6">How much have you saved for {showSaveModal.name}?</p>
               <form onSubmit={handleSaveMoney} className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Amount ($)</label>
+                  <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Amount (₹)</label>
                   <input
                     type="number"
                     required
                     value={saveAmount}
                     onChange={(e) => setSaveAmount(e.target.value)}
-                    placeholder="0.00"
+                    placeholder="₹0.00"
                     className="w-full px-4 py-3 bg-brand-bg/30 border border-brand-accent/20 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all"
                   />
                 </div>
@@ -359,7 +359,7 @@ export default function Wishlist() {
                 </h2>
                 
                 <p className="text-brand-dark/60 font-medium text-lg mb-8 leading-relaxed">
-                  Congratulations! You've successfully saved <span className="text-brand-primary font-black">${showCongratsModal.targetAmount.toLocaleString()}</span> for <span className="text-brand-dark font-black">{showCongratsModal.name}</span>.
+                  Congratulations! You've successfully saved <span className="text-brand-primary font-black">₹{showCongratsModal.targetAmount.toLocaleString()}</span> for <span className="text-brand-dark font-black">{showCongratsModal.name}</span>.
                 </p>
 
                 <div className="bg-brand-bg/50 p-6 rounded-3xl mb-8 border border-brand-accent/10">

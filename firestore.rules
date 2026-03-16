@@ -65,7 +65,6 @@ service cloud.firestore {
       return data.displayName is string && data.displayName.size() > 0 &&
              (!('photoURL' in data) || data.photoURL is string) &&
              (!('securityPin' in data) || (data.securityPin is string && data.securityPin.matches('^[0-9]{4}$'))) &&
-             (!('useBiometrics' in data) || data.useBiometrics is bool) &&
              data.setupComplete is bool;
     }
 
@@ -111,6 +110,13 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isValidBudget(request.resource.data);
       allow update: if isAuthenticated() && isDocOwner() && isValidBudget(request.resource.data);
       allow delete: if isAuthenticated() && isDocOwner();
+    }
+
+    match /debts/{debtId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
     }
     
     // Default deny

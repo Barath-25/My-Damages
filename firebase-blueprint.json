@@ -8,7 +8,6 @@
         "displayName": { "type": "string" },
         "photoURL": { "type": "string" },
         "securityPin": { "type": "string" },
-        "useBiometrics": { "type": "boolean" },
         "setupComplete": { "type": "boolean" }
       },
       "required": ["displayName", "setupComplete"]

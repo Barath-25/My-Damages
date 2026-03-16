@@ -4,16 +4,16 @@ import { doc, setDoc, collection, addDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { UserCircle, Camera, Shield, ArrowRight } from 'lucide-react';
 
-interface ProfileSetupProps {
+interface ProfileSettingsProps {
   user: User;
   onComplete: () => void;
 }
 
-export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
+export default function ProfileSettings({ user, onComplete }: ProfileSettingsProps) {
   const [displayName, setDisplayName] = useState(user.displayName || '');
   const [photoURL, setPhotoURL] = useState(user.photoURL || '');
+  const [upiId, setUpiId] = useState('');
   const [pin, setPin] = useState('');
-  const [useBiometrics, setUseBiometrics] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,8 +24,8 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
       await setDoc(doc(db, 'users', user.uid), {
         displayName,
         photoURL,
+        upiId: upiId || null,
         securityPin: pin || null,
-        useBiometrics,
         setupComplete: true,
         uid: user.uid
       });
@@ -63,7 +63,7 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
             </div>
           </div>
           <h1 className="text-2xl font-bold text-brand-dark mt-4">Complete Your Profile</h1>
-          <p className="text-zinc-500 text-sm">Let's personalize your SpendWise experience</p>
+          <p className="text-zinc-500 text-sm">Let's personalize your My Damages experience</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -90,6 +90,17 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
             />
           </div>
 
+          <div>
+            <label className="block text-xs font-bold text-brand-dark uppercase tracking-widest mb-2">UPI ID (for QR generation)</label>
+            <input
+              type="text"
+              value={upiId}
+              onChange={(e) => setUpiId(e.target.value)}
+              className="w-full px-4 py-3 bg-brand-bg/30 border border-brand-accent/20 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all"
+              placeholder="yourname@upi"
+            />
+          </div>
+
           <div className="p-4 bg-brand-bg/20 rounded-2xl border border-brand-accent/10">
             <div className="flex items-center gap-3 mb-4">
               <Shield className="w-5 h-5 text-brand-primary" />
@@ -110,20 +121,6 @@ export default function ProfileSetup({ user, onComplete }: ProfileSetupProps) {
                   placeholder="••••"
                 />
                 <p className="text-[10px] text-zinc-500 mt-1">Optional: Leave blank to skip PIN security</p>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold text-brand-dark">Use Biometrics</p>
-                  <p className="text-[10px] text-zinc-500">Fingerprint or Face ID</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setUseBiometrics(!useBiometrics)}
-                  className={`w-12 h-6 rounded-full transition-all relative ${useBiometrics ? 'bg-brand-primary' : 'bg-zinc-300'}`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${useBiometrics ? 'left-7' : 'left-1'}`} />
-                </button>
               </div>
             </div>
           </div>

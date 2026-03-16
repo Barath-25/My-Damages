@@ -8,14 +8,14 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 
 interface DashboardProps {
   transactions: Transaction[];
+  showBalance: boolean;
+  setShowBalance: (show: boolean) => void;
 }
 
 const COLORS = ['#427A76', '#F9B487', '#174143', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
-export default function Dashboard({ transactions }: DashboardProps) {
-  const [showBalance, setShowBalance] = useState(false);
+export default function Dashboard({ transactions, showBalance, setShowBalance }: DashboardProps) {
   const [budget, setBudget] = useState<number | null>(null);
-  const [totalOwed, setTotalOwed] = useState(0);
   const currentMonth = new Date().toISOString().slice(0, 7);
 
   useEffect(() => {
@@ -32,20 +32,7 @@ export default function Dashboard({ transactions }: DashboardProps) {
       }
     };
 
-    const fetchDebts = async () => {
-      if (!auth.currentUser) return;
-      const debtQuery = query(
-        collection(db, 'debts'),
-        where('uid', '==', auth.currentUser.uid),
-        where('isPaid', '==', false)
-      );
-      const snapshot = await getDocs(debtQuery);
-      const total = snapshot.docs.reduce((acc, doc) => acc + (doc.data().amount || 0), 0);
-      setTotalOwed(total);
-    };
-
     fetchBudget();
-    fetchDebts();
   }, [currentMonth]);
 
   const stats = useMemo(() => {
@@ -115,9 +102,20 @@ export default function Dashboard({ transactions }: DashboardProps) {
     return Object.entries(categories).map(([name, value]) => ({ name, value }));
   }, [transactions]);
 
+  const budgetStatus = useMemo(() => {
+    const balance = stats.balance;
+    
+    if (balance === 0) return { label: 'ZERO', color: 'bg-zinc-500', icon: AlertCircle, sub: 'No Balance' };
+    if (balance < 0) return { label: 'CRITICAL', color: 'bg-rose-500', icon: AlertCircle, sub: 'Negative Balance' };
+    if (balance < 5000) return { label: 'WARNING', color: 'bg-amber-500', icon: AlertCircle, sub: 'Low Balance' };
+    if (balance < 15000) return { label: 'CAUTION', color: 'bg-brand-primary', icon: CheckCircle, sub: 'Moderate Balance' };
+    
+    return { label: 'SAFE', color: 'bg-emerald-500', icon: CheckCircle, sub: 'Healthy Balance' };
+  }, [stats.balance]);
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-3xl border border-black/5 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-emerald-50 rounded-xl">
@@ -125,7 +123,7 @@ export default function Dashboard({ transactions }: DashboardProps) {
             </div>
             <span className="text-xs font-bold text-brand-dark/60 uppercase tracking-widest">Total Income</span>
           </div>
-          <div className="text-2xl font-bold text-brand-dark">${stats.income.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-brand-dark">₹{stats.income.toLocaleString()}</div>
         </div>
 
         <div className="bg-white p-6 rounded-3xl border border-black/5 shadow-sm">
@@ -135,19 +133,7 @@ export default function Dashboard({ transactions }: DashboardProps) {
             </div>
             <span className="text-xs font-bold text-brand-dark/60 uppercase tracking-widest">Total Expenses</span>
           </div>
-          <div className="text-2xl font-bold text-brand-dark">${stats.expense.toLocaleString()}</div>
-        </div>
-
-        <div className="bg-white p-6 rounded-3xl border border-black/5 shadow-sm">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-brand-bg rounded-xl">
-              <UserIcon className="w-5 h-5 text-brand-primary" />
-            </div>
-            <span className="text-xs font-bold text-brand-dark/60 uppercase tracking-widest">People Owe Me</span>
-          </div>
-          <div className="text-2xl font-bold text-brand-dark">
-            {showBalance ? `$${totalOwed.toLocaleString()}` : '••••••'}
-          </div>
+          <div className="text-2xl font-bold text-brand-dark">₹{stats.expense.toLocaleString()}</div>
         </div>
 
         <div className="bg-brand-primary p-6 rounded-3xl border border-black/5 shadow-lg shadow-brand-primary/20">
@@ -166,56 +152,26 @@ export default function Dashboard({ transactions }: DashboardProps) {
             </button>
           </div>
           <div className="text-2xl font-bold text-white">
-            {showBalance ? `$${stats.balance.toLocaleString()}` : '••••••'}
+            {showBalance ? `₹${stats.balance.toLocaleString()}` : '••••••'}
           </div>
         </div>
 
-        <div className={`p-6 rounded-3xl border border-black/5 shadow-sm transition-all duration-500 ${
-          budget 
-            ? (stats.currentMonthExpense > budget 
-                ? 'bg-rose-500 text-white border-rose-600' 
-                : (stats.currentMonthExpense > budget * 0.9 
-                    ? 'bg-amber-500 text-white border-amber-600' 
-                    : (stats.currentMonthExpense > budget * 0.5 
-                        ? 'bg-brand-primary text-white border-brand-primary' 
-                        : 'bg-emerald-500 text-white border-emerald-600')))
-            : 'bg-white'
-        }`}>
+        <div className={`p-6 rounded-3xl border border-black/5 shadow-sm transition-all duration-500 ${budgetStatus.color} text-white`}>
           <div className="flex items-center gap-3 mb-2">
-            <div className={`p-2 rounded-xl ${
-              budget ? 'bg-white/20' : 'bg-brand-bg'
-            }`}>
-              {budget ? (
-                stats.currentMonthExpense > budget 
-                  ? <AlertCircle className="w-5 h-5 text-white" /> 
-                  : <CheckCircle className="w-5 h-5 text-white" />
-              ) : (
-                <Wallet className="w-5 h-5 text-brand-dark/40" />
-              )}
+            <div className="p-2 bg-white/20 rounded-xl">
+              <budgetStatus.icon className="w-5 h-5 text-white" />
             </div>
-            <span className={`text-xs font-bold uppercase tracking-widest ${budget ? 'text-white/80' : 'text-brand-dark/60'}`}>
+            <span className="text-xs font-bold uppercase tracking-widest text-white/80">
               Budget Status
             </span>
           </div>
           <div className="text-2xl font-black">
-            {budget ? (
-              <div className="flex flex-col">
-                <span>
-                  {stats.currentMonthExpense > budget 
-                    ? 'CRITICAL' 
-                    : (stats.currentMonthExpense > budget * 0.9 
-                        ? 'WARNING' 
-                        : (stats.currentMonthExpense > budget * 0.5 
-                            ? 'CAUTION' 
-                            : 'SAFE'))}
-                </span>
-                <span className="text-[10px] uppercase tracking-widest opacity-60">
-                  {stats.currentMonthExpense > budget ? 'Over Limit' : 'Within Limit'}
-                </span>
-              </div>
-            ) : (
-              <span className="text-sm text-brand-dark/40 italic">Not set</span>
-            )}
+            <div className="flex flex-col">
+              <span>{budgetStatus.label}</span>
+              <span className="text-[10px] uppercase tracking-widest opacity-60">
+                {budgetStatus.sub}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -233,7 +189,7 @@ export default function Dashboard({ transactions }: DashboardProps) {
                   tickLine={false} 
                   tick={{ fontSize: 12, fill: '#71717a' }}
                   ticks={yAxisTicks}
-                  tickFormatter={(value) => `$${Math.round(value)}`}
+                  tickFormatter={(value) => `₹${Math.round(value)}`}
                 />
                 <Tooltip 
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}

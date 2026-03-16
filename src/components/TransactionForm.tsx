@@ -121,7 +121,7 @@ export default function TransactionForm({ accounts, selectedAccountId, onClose }
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
+              placeholder="₹0.00"
               className="w-full px-4 py-2 bg-brand-bg/30 border border-brand-accent/20 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all text-sm"
             />
           </div>

@@ -8,7 +8,7 @@ export interface UserProfile {
   displayName: string;
   photoURL?: string;
   securityPin?: string;
-  useBiometrics?: boolean;
+  upiId?: string;
   setupComplete: boolean;
 }
 
@@ -32,7 +32,13 @@ export interface Account {
   id: string;
   name: string;
   type: string;
+  balance: number;
   uid: string;
+  bankName?: string;
+  logo?: string;
+  upiId?: string;
+  isMain?: boolean;
+  createdAt: Timestamp;
 }
 
 export interface Transaction {
@@ -58,14 +64,4 @@ export interface DailyTotal {
 export interface CategoryTotal {
   category: string;
   amount: number;
-}
-
-export interface Debt {
-  id: string;
-  personName: string;
-  amount: number;
-  description: string;
-  isPaid: boolean;
-  uid: string;
-  createdAt: Timestamp;
 }

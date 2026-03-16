@@ -121,7 +121,7 @@ export default function SpendingHistory() {
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] font-bold text-brand-dark/40 uppercase tracking-widest">Total Spent</p>
-                  <p className="text-lg font-black text-brand-primary">${groupedData[year].total.toLocaleString()}</p>
+                  <p className="text-lg font-black text-brand-primary">₹{groupedData[year].total.toLocaleString()}</p>
                 </div>
               </button>
 
@@ -151,7 +151,7 @@ export default function SpendingHistory() {
                               </div>
                               <div className="text-right">
                                 <p className="text-[10px] font-bold text-brand-dark/30 uppercase tracking-widest">Spent</p>
-                                <p className="font-black text-brand-dark">${groupedData[year].months[month].total.toLocaleString()}</p>
+                                <p className="font-black text-brand-dark">₹{groupedData[year].months[month].total.toLocaleString()}</p>
                               </div>
                             </button>
 
@@ -176,7 +176,7 @@ export default function SpendingHistory() {
                                           </div>
                                         </div>
                                         <p className={`font-black ${tx.type === 'income' ? 'text-emerald-600' : 'text-brand-dark'}`}>
-                                          {tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString()}
+                                          {tx.type === 'income' ? '+' : '-'}₹{tx.amount.toLocaleString()}
                                         </p>
                                       </div>
                                     ))}
