@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, where, onSnapshot, addDoc, updateDoc, doc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { User, Plus, Trash2, HandCoins, CheckCircle, X, Clock, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -38,6 +38,8 @@ export default function Debts() {
       
       data.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
       setDebts(data);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'debts');
     });
 
     return () => unsubscribe();
@@ -62,7 +64,7 @@ export default function Debts() {
       setDescription('');
       setShowAddModal(false);
     } catch (error) {
-      console.error('Error adding debt:', error);
+      handleFirestoreError(error, OperationType.CREATE, 'debts');
     } finally {
       setLoading(false);
     }
@@ -74,7 +76,7 @@ export default function Debts() {
         isPaid: !debt.isPaid
       });
     } catch (error) {
-      console.error('Error updating debt:', error);
+      handleFirestoreError(error, OperationType.UPDATE, `debts/${debt.id}`);
     }
   };
 
@@ -82,7 +84,7 @@ export default function Debts() {
     try {
       await deleteDoc(doc(db, 'debts', id));
     } catch (error) {
-      console.error('Error deleting debt:', error);
+      handleFirestoreError(error, OperationType.DELETE, `debts/${id}`);
     }
   };
 

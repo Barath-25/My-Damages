@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { db, auth } from '../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { PlusCircle, X } from 'lucide-react';
 import { TransactionType, Account } from '../types';
@@ -35,18 +35,22 @@ export default function TransactionForm({ accounts, selectedAccountId, cashAccou
     try {
       const finalAccountId = paymentMethod === 'cash' ? (cashAccount?.id || accountId) : accountId;
       
-      await addDoc(collection(db, 'transactions'), {
-        amount: parseFloat(amount),
-        type: paymentMethod === 'cash' && type === 'income' ? 'transfer' : type,
-        paymentMethod,
-        category: category === 'Others' ? otherCategory : category,
-        otherCategory: category === 'Others' ? otherCategory : '',
-        date: Timestamp.fromDate(new Date(date)),
-        description: category === 'Others' ? otherCategory : '',
-        uid: auth.currentUser.uid,
-        accountId: finalAccountId,
-        createdAt: Timestamp.now()
-      });
+      try {
+        await addDoc(collection(db, 'transactions'), {
+          amount: parseFloat(amount),
+          type: paymentMethod === 'cash' && type === 'income' ? 'transfer' : type,
+          paymentMethod,
+          category: category === 'Others' ? otherCategory : category,
+          otherCategory: category === 'Others' ? otherCategory : '',
+          date: Timestamp.fromDate(new Date(date)),
+          description: category === 'Others' ? otherCategory : '',
+          uid: auth.currentUser.uid,
+          accountId: finalAccountId,
+          createdAt: Timestamp.now()
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, 'transactions');
+      }
       
       setAmount('');
       setCategory('');

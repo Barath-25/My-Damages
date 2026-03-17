@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, setDoc, addDoc, deleteDoc, Timestamp, onSnapshot } from 'firebase/firestore';
 import { UserProfile, MonthlyBudget } from '../types';
 import SpendingHistory from './SpendingHistory';
@@ -25,25 +25,33 @@ export default function Settings() {
       if (!auth.currentUser) return;
 
       // Fetch Profile
-      const profileDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
-      if (profileDoc.exists()) {
-        const data = profileDoc.data() as UserProfile;
-        setProfile(data);
-        setDisplayName(data.displayName);
-        setPhotoURL(data.photoURL || '');
-        setPin(data.securityPin || '');
-        setUpiId(data.upiId || '');
+      try {
+        const profileDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        if (profileDoc.exists()) {
+          const data = profileDoc.data() as UserProfile;
+          setProfile(data);
+          setDisplayName(data.displayName);
+          setPhotoURL(data.photoURL || '');
+          setPin(data.securityPin || '');
+          setUpiId(data.upiId || '');
+        }
+      } catch (error) {
+        handleFirestoreError(error, OperationType.GET, `users/${auth.currentUser.uid}`);
       }
 
       // Fetch Budget
-      const budgetQuery = query(
-        collection(db, 'budgets'),
-        where('uid', '==', auth.currentUser.uid),
-        where('month', '==', currentMonth)
-      );
-      const budgetSnapshot = await getDocs(budgetQuery);
-      if (!budgetSnapshot.empty) {
-        setBudget(budgetSnapshot.docs[0].data().amount);
+      try {
+        const budgetQuery = query(
+          collection(db, 'budgets'),
+          where('uid', '==', auth.currentUser.uid),
+          where('month', '==', currentMonth)
+        );
+        const budgetSnapshot = await getDocs(budgetQuery);
+        if (!budgetSnapshot.empty) {
+          setBudget(budgetSnapshot.docs[0].data().amount);
+        }
+      } catch (error) {
+        handleFirestoreError(error, OperationType.LIST, 'budgets');
       }
     };
 
@@ -64,7 +72,7 @@ export default function Settings() {
       });
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
     } catch (error) {
-      console.error('Error updating profile:', error);
+      handleFirestoreError(error, OperationType.UPDATE, `users/${auth.currentUser.uid}`);
       setMessage({ type: 'error', text: 'Failed to update profile.' });
     } finally {
       setLoading(false);
@@ -77,8 +85,8 @@ export default function Settings() {
     if (!auth.currentUser) return;
 
     setLoading(true);
+    const budgetId = `${auth.currentUser.uid}_${currentMonth}`;
     try {
-      const budgetId = `${auth.currentUser.uid}_${currentMonth}`;
       await setDoc(doc(db, 'budgets', budgetId), {
         month: currentMonth,
         amount: budget,
@@ -86,7 +94,7 @@ export default function Settings() {
       });
       setMessage({ type: 'success', text: 'Monthly budget updated!' });
     } catch (error) {
-      console.error('Error updating budget:', error);
+      handleFirestoreError(error, OperationType.WRITE, `budgets/${budgetId}`);
       setMessage({ type: 'error', text: 'Failed to update budget.' });
     } finally {
       setLoading(false);

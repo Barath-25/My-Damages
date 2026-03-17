@@ -1,77 +1,86 @@
 {
   "entities": {
     "UserProfile": {
-      "title": "UserProfile",
-      "description": "User profile information and settings.",
+      "title": "User Profile",
+      "description": "Stores user profile information and security settings.",
       "type": "object",
       "properties": {
-        "displayName": { "type": "string" },
-        "photoURL": { "type": "string" },
-        "securityPin": { "type": "string" },
-        "setupComplete": { "type": "boolean" }
+        "uid": { "type": "string", "description": "The user's unique ID." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "photoURL": { "type": "string", "format": "uri", "description": "The user's profile photo URL." },
+        "securityPin": { "type": "string", "description": "A 4-digit security PIN for app access." },
+        "upiId": { "type": "string", "description": "The user's default UPI ID." },
+        "setupComplete": { "type": "boolean", "description": "Whether the user has completed the initial setup." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the profile was created." }
       },
-      "required": ["displayName", "setupComplete"]
+      "required": ["uid", "displayName", "email"]
     },
     "Account": {
-      "title": "Account",
-      "description": "A bank account or wallet.",
+      "title": "Bank Account",
+      "description": "Represents a bank or cash account.",
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "type": { "type": "string" },
-        "balance": { "type": "number" },
-        "uid": { "type": "string" }
+        "uid": { "type": "string", "description": "The owner's user ID." },
+        "name": { "type": "string", "description": "The name of the account (e.g., 'SBI Savings')." },
+        "bankName": { "type": "string", "description": "The name of the bank." },
+        "upiId": { "type": "string", "description": "The UPI ID associated with this account." },
+        "isMain": { "type": "boolean", "description": "Whether this is the primary account." },
+        "balance": { "type": "number", "description": "Current balance in the account." },
+        "type": { "type": "string", "enum": ["bank", "cash"], "description": "The type of account." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the account was created." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "When the account was last updated." }
       },
-      "required": ["name", "uid"]
+      "required": ["uid", "name", "balance", "type"]
     },
     "Transaction": {
       "title": "Transaction",
-      "description": "A record of income or expense.",
+      "description": "A record of income, expense, or transfer.",
       "type": "object",
       "properties": {
-        "amount": { "type": "number" },
-        "type": { "type": "string", "enum": ["income", "expense", "transfer"] },
-        "paymentMethod": { "type": "string", "enum": ["upi", "cash"] },
-        "category": { "type": "string" },
-        "otherCategory": { "type": "string" },
-        "date": { "type": "string", "format": "date-time" },
-        "description": { "type": "string" },
-        "uid": { "type": "string" },
-        "accountId": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "uid": { "type": "string", "description": "The owner's user ID." },
+        "accountId": { "type": "string", "description": "The ID of the account this transaction belongs to." },
+        "amount": { "type": "number", "description": "The transaction amount." },
+        "type": { "type": "string", "enum": ["income", "expense", "transfer"], "description": "The type of transaction." },
+        "category": { "type": "string", "description": "The category of the transaction (e.g., 'Food', 'Salary')." },
+        "date": { "type": "string", "format": "date-time", "description": "The date of the transaction." },
+        "note": { "type": "string", "description": "An optional note for the transaction." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the transaction was recorded." }
       },
-      "required": ["amount", "type", "paymentMethod", "category", "date", "uid", "accountId", "createdAt"]
+      "required": ["uid", "accountId", "amount", "type", "date"]
     },
     "WishlistItem": {
-      "title": "WishlistItem",
-      "description": "An item the user wants to buy.",
+      "title": "Wishlist Item",
+      "description": "An item the user wants to save for.",
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "targetAmount": { "type": "number" },
-        "savedAmount": { "type": "number" },
-        "uid": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "uid": { "type": "string", "description": "The owner's user ID." },
+        "name": { "type": "string", "description": "The name of the item." },
+        "price": { "type": "number", "description": "The price of the item." },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"], "description": "The priority of the item." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the item was added." }
       },
-      "required": ["name", "targetAmount", "savedAmount", "uid", "createdAt"]
+      "required": ["uid", "name", "price"]
     },
-    "MonthlyBudget": {
-      "title": "MonthlyBudget",
-      "description": "Budget for a specific month.",
+    "Debt": {
+      "title": "Debt",
+      "description": "Money owed to or by the user.",
       "type": "object",
       "properties": {
-        "month": { "type": "string" },
-        "amount": { "type": "number" },
-        "uid": { "type": "string" }
+        "uid": { "type": "string", "description": "The owner's user ID." },
+        "personName": { "type": "string", "description": "The name of the person involved." },
+        "amount": { "type": "number", "description": "The amount owed." },
+        "type": { "type": "string", "enum": ["owe", "owed"], "description": "Whether the user owes or is owed." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the debt was recorded." }
       },
-      "required": ["month", "amount", "uid"]
+      "required": ["uid", "personName", "amount", "type"]
     }
   },
   "firestore": {
-    "users": { "schema": "UserProfile", "description": "User profiles." },
-    "accounts": { "schema": "Account", "description": "User bank accounts." },
-    "transactions": { "schema": "Transaction", "description": "User transactions." },
-    "wishlist": { "schema": "WishlistItem", "description": "User wishlist items." },
-    "budgets": { "schema": "MonthlyBudget", "description": "User monthly budgets." }
+    "/users/{userId}": { "schema": "UserProfile", "description": "User profiles." },
+    "/accounts/{accountId}": { "schema": "Account", "description": "Bank and cash accounts." },
+    "/transactions/{transactionId}": { "schema": "Transaction", "description": "Financial transactions." },
+    "/wishlist/{itemId}": { "schema": "WishlistItem", "description": "User wishlist items." },
+    "/debts/{debtId}": { "schema": "Debt", "description": "Debts and money owed." }
   }
 }

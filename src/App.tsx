@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { auth, db, signInWithGoogle, logout } from './firebase';
+import { auth, db, signInWithGoogle, logout, handleFirestoreError, OperationType } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { collection, query, where, orderBy, onSnapshot, doc, getDoc, addDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, getDoc, addDoc, updateDoc, Timestamp, getDocFromCache } from 'firebase/firestore';
 import { Transaction, UserProfile, Account } from './types';
 import TransactionForm from './components/TransactionForm';
 import Dashboard from './components/Dashboard';
@@ -52,13 +52,17 @@ export default function App() {
       setUser(user);
       if (user) {
         // Fetch profile
-        const profileDoc = await getDoc(doc(db, 'users', user.uid));
-        if (profileDoc.exists()) {
-          const profileData = profileDoc.data() as UserProfile;
-          setProfile(profileData);
-          if (profileData.securityPin) setIsLocked(true);
-        } else {
-          setProfile(null);
+        try {
+          const profileDoc = await getDoc(doc(db, 'users', user.uid));
+          if (profileDoc.exists()) {
+            const profileData = profileDoc.data() as UserProfile;
+            setProfile(profileData);
+            if (profileData.securityPin) setIsLocked(true);
+          } else {
+            setProfile(null);
+          }
+        } catch (error) {
+          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
         }
       } else {
         setProfile(null);
@@ -93,7 +97,7 @@ export default function App() {
             createdAt: Timestamp.now()
           });
         } catch (error) {
-          console.error('Error creating cash account:', error);
+          handleFirestoreError(error, OperationType.CREATE, 'accounts');
         }
       }
 
@@ -101,6 +105,8 @@ export default function App() {
       if (accs.length > 0 && !selectedAccountId) {
         setSelectedAccountId(accs[0].id);
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'accounts');
     });
     return unsubscribe;
   }, [user]);
@@ -123,6 +129,8 @@ export default function App() {
         ...doc.data()
       })) as Transaction[];
       setAllTransactions(docs);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'transactions');
     });
 
     return unsubscribe;
@@ -192,22 +200,34 @@ export default function App() {
 
       if (showAccountModal.account) {
         // Update existing
-        await updateDoc(doc(db, 'accounts', showAccountModal.account.id), accountData);
+        try {
+          await updateDoc(doc(db, 'accounts', showAccountModal.account.id), accountData);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, `accounts/${showAccountModal.account.id}`);
+        }
       } else {
         // Create new
-        await addDoc(collection(db, 'accounts'), {
-          ...accountData,
-          balance: 0,
-          type: 'bank',
-          createdAt: Timestamp.now()
-        });
+        try {
+          await addDoc(collection(db, 'accounts'), {
+            ...accountData,
+            balance: 0,
+            type: 'bank',
+            createdAt: Timestamp.now()
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.CREATE, 'accounts');
+        }
       }
 
       // If this is set as main, unset others
       if (isMain) {
         const otherMainAccounts = accounts.filter(a => a.isMain && a.id !== showAccountModal.account?.id);
         for (const acc of otherMainAccounts) {
-          await updateDoc(doc(db, 'accounts', acc.id), { isMain: false });
+          try {
+            await updateDoc(doc(db, 'accounts', acc.id), { isMain: false });
+          } catch (error) {
+            handleFirestoreError(error, OperationType.UPDATE, `accounts/${acc.id}`);
+          }
         }
       }
 
@@ -247,6 +267,17 @@ export default function App() {
     return () => window.removeEventListener('changeView', handleViewChange);
   }, []);
 
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  const handleLogin = async () => {
+    setLoginError(null);
+    try {
+      await signInWithGoogle();
+    } catch (error: any) {
+      setLoginError(error.message || 'Login failed. Please check your Firebase configuration.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-brand-bg">
@@ -268,8 +299,18 @@ export default function App() {
           </div>
           <h1 className="text-4xl font-black text-brand-dark mb-3 tracking-tight">My Damages</h1>
           <p className="text-zinc-500 mb-10 text-lg leading-relaxed">Master your wealth, visualize your spending, and budget like a pro.</p>
+          
+          {loginError && (
+            <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-sm font-medium">
+              {loginError}
+              <div className="mt-2 text-[10px] uppercase tracking-widest opacity-70">
+                Tip: Ensure your preview URL is allowlisted in Firebase Console.
+              </div>
+            </div>
+          )}
+
           <button
-            onClick={signInWithGoogle}
+            onClick={handleLogin}
             className="w-full py-5 bg-brand-primary text-white rounded-2xl font-bold hover:bg-brand-dark transition-all flex items-center justify-center gap-4 shadow-xl shadow-brand-primary/20 active:scale-95"
           >
             <img src="https://www.google.com/favicon.ico" className="w-6 h-6" alt="Google" />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { Transaction } from '../types';
 import { ChevronRight, ChevronDown, Calendar, CreditCard, ArrowDownRight, ArrowUpRight } from 'lucide-react';
@@ -63,6 +63,8 @@ export default function SpendingHistory() {
 
       setGroupedData(data);
       setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'transactions');
     });
 
     return () => unsubscribe();

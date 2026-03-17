@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, where, onSnapshot, addDoc, updateDoc, doc, deleteDoc, Timestamp, orderBy } from 'firebase/firestore';
 import { WishlistItem } from '../types';
 import { Plus, Trash2, PiggyBank, Target, TrendingUp, PartyPopper, X } from 'lucide-react';
@@ -63,7 +63,7 @@ export default function Wishlist() {
       setItems(wishlistData);
       setError(null);
     }, (err) => {
-      console.error('Wishlist snapshot error:', err);
+      handleFirestoreError(err, OperationType.LIST, 'wishlist');
       setError('Failed to load wishlist. Please try again.');
     });
 
@@ -94,7 +94,7 @@ export default function Wishlist() {
       setShowAddModal(false);
       setError(null);
     } catch (error) {
-      console.error('Error adding wishlist item:', error);
+      handleFirestoreError(error, OperationType.CREATE, 'wishlist');
       setError('Failed to add item. Please try again.');
     } finally {
       setLoading(false);
@@ -124,7 +124,7 @@ export default function Wishlist() {
       setSaveAmount('');
       setShowSaveModal(null);
     } catch (error) {
-      console.error('Error saving money:', error);
+      handleFirestoreError(error, OperationType.UPDATE, `wishlist/${showSaveModal.id}`);
     } finally {
       setLoading(false);
     }
@@ -134,7 +134,7 @@ export default function Wishlist() {
     try {
       await deleteDoc(doc(db, 'wishlist', id));
     } catch (error) {
-      console.error('Error deleting wishlist item:', error);
+      handleFirestoreError(error, OperationType.DELETE, `wishlist/${id}`);
     }
   };
 

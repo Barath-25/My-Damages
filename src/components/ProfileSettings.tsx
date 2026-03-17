@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { db, auth } from '../firebase';
-import { doc, setDoc, collection, addDoc } from 'firebase/firestore';
+import { db, auth, handleFirestoreError, OperationType } from '../firebase';
+import { doc, setDoc, collection, addDoc, Timestamp } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { UserCircle, Camera, Shield, ArrowRight } from 'lucide-react';
 
@@ -21,22 +21,35 @@ export default function ProfileSettings({ user, onComplete }: ProfileSettingsPro
     setLoading(true);
     try {
       // Create user profile
-      await setDoc(doc(db, 'users', user.uid), {
-        displayName,
-        photoURL,
-        upiId: upiId || null,
-        securityPin: pin || null,
-        setupComplete: true,
-        uid: user.uid
-      });
+      try {
+        await setDoc(doc(db, 'users', user.uid), {
+          displayName,
+          photoURL,
+          upiId: upiId || null,
+          securityPin: pin || null,
+          setupComplete: true,
+          uid: user.uid,
+          createdAt: Timestamp.now(),
+          email: user.email,
+          role: 'user'
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+      }
 
       // Create default account
-      await addDoc(collection(db, 'accounts'), {
-        name: 'Main Account',
-        type: 'General',
-        uid: user.uid,
-        createdAt: new Date()
-      });
+      try {
+        await addDoc(collection(db, 'accounts'), {
+          name: 'Main Account',
+          type: 'bank',
+          balance: 0,
+          uid: user.uid,
+          createdAt: Timestamp.now(),
+          isMain: true
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, 'accounts');
+      }
 
       onComplete();
     } catch (error) {
