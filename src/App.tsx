@@ -35,7 +35,7 @@ export default function App() {
   const [isLocked, setIsLocked] = useState(false);
   const [showBalance, setShowBalance] = useState(false);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
-  const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [currentView, setCurrentView] = useState<View>('calendar');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
