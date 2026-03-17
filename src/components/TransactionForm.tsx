@@ -8,7 +8,6 @@ import { motion, AnimatePresence } from 'motion/react';
 interface TransactionFormProps {
   accounts: Account[];
   selectedAccountId: string;
-  cashAccount?: Account;
   onClose?: () => void;
 }
 
@@ -17,35 +16,42 @@ const CATEGORIES = {
   expense: ['Food', 'Academics', 'Transportation', 'Others']
 };
 
-export default function TransactionForm({ accounts, selectedAccountId, cashAccount, onClose }: TransactionFormProps) {
+export default function TransactionForm({ accounts, selectedAccountId, onClose }: TransactionFormProps) {
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [otherCategory, setOtherCategory] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [accountId, setAccountId] = useState(selectedAccountId);
-  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cash'>('upi');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth.currentUser) return;
+    setError(null);
+
+    if (!category) {
+      setError('Please select a category');
+      return;
+    }
+    if (!accountId) {
+      setError('Please select an account');
+      return;
+    }
 
     setLoading(true);
     try {
-      const finalAccountId = paymentMethod === 'cash' ? (cashAccount?.id || accountId) : accountId;
-      
       try {
         await addDoc(collection(db, 'transactions'), {
           amount: parseFloat(amount),
-          type: paymentMethod === 'cash' && type === 'income' ? 'transfer' : type,
-          paymentMethod,
+          type,
           category: category === 'Others' ? otherCategory : category,
           otherCategory: category === 'Others' ? otherCategory : '',
           date: Timestamp.fromDate(new Date(date)),
           description: category === 'Others' ? otherCategory : '',
           uid: auth.currentUser.uid,
-          accountId: finalAccountId,
+          accountId,
           createdAt: Timestamp.now()
         });
       } catch (error) {
@@ -75,6 +81,11 @@ export default function TransactionForm({ accounts, selectedAccountId, cashAccou
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-xs font-bold">
+            {error}
+          </div>
+        )}
         <div className="flex p-1 bg-brand-bg rounded-xl">
           <button
             type="button"
@@ -92,34 +103,11 @@ export default function TransactionForm({ accounts, selectedAccountId, cashAccou
               type === 'income' ? 'bg-white shadow-sm text-brand-dark' : 'text-zinc-500 hover:text-brand-dark'
             }`}
           >
-            {paymentMethod === 'cash' ? 'Add to Cash' : 'Income'}
+            Income
           </button>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Payment Method</label>
-            <div className="flex p-1 bg-brand-bg rounded-xl">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('upi')}
-                className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${
-                  paymentMethod === 'upi' ? 'bg-white shadow-sm text-brand-dark' : 'text-zinc-500 hover:text-brand-dark'
-                }`}
-              >
-                UPI
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('cash')}
-                className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${
-                  paymentMethod === 'cash' ? 'bg-white shadow-sm text-brand-dark' : 'text-zinc-500 hover:text-brand-dark'
-                }`}
-              >
-                Cash
-              </button>
-            </div>
-          </div>
           <div>
             <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Amount</label>
             <input
@@ -132,33 +120,6 @@ export default function TransactionForm({ accounts, selectedAccountId, cashAccou
               className="w-full px-4 py-2 bg-brand-bg/30 border border-brand-accent/20 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all text-sm"
             />
           </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          {paymentMethod === 'upi' ? (
-            <div>
-              <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Account</label>
-              <select
-                required
-                value={accountId}
-                onChange={(e) => setAccountId(e.target.value)}
-                className="w-full px-4 py-2 bg-brand-bg/30 border border-brand-accent/20 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all text-sm"
-              >
-                {accounts
-                  .filter(acc => acc.name.toLowerCase() !== 'cash')
-                  .map(acc => (
-                    <option key={acc.id} value={acc.id}>{acc.name}</option>
-                  ))}
-              </select>
-            </div>
-          ) : (
-            <div>
-              <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Account</label>
-              <div className="w-full px-4 py-2 bg-brand-bg/30 border border-brand-accent/20 rounded-xl text-sm font-bold text-brand-dark/50">
-                Cash Account
-              </div>
-            </div>
-          )}
           <div>
             <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Date</label>
             <input
@@ -169,6 +130,20 @@ export default function TransactionForm({ accounts, selectedAccountId, cashAccou
               className="w-full px-4 py-2 bg-brand-bg/30 border border-brand-accent/20 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all text-sm"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Account</label>
+          <select
+            required
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+            className="w-full px-4 py-2 bg-brand-bg/30 border border-brand-accent/20 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all text-sm"
+          >
+            {accounts.map(acc => (
+              <option key={acc.id} value={acc.id}>{acc.name}</option>
+            ))}
+          </select>
         </div>
 
         <div>

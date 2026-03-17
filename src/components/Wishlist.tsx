@@ -174,7 +174,7 @@ export default function Wishlist() {
                 </div>
                 <button
                   onClick={() => handleDeleteItem(item.id)}
-                  className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all"
+                  className="p-2 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

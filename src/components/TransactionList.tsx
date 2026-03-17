@@ -66,7 +66,7 @@ export default function TransactionList({ transactions }: TransactionListProps) 
                 <td className="px-8 py-6 text-center">
                   <button
                     onClick={() => t.id && setDeletingId(t.id)}
-                    className="p-2.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                    className="p-2.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-all"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>

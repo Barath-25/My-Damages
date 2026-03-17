@@ -26,7 +26,7 @@ service cloud.firestore {
     //   - upiId: string (optional) - The UPI ID associated with this account.
     //   - isMain: bool (optional) - Whether this is the primary account.
     //   - balance: number (required) - Current balance in the account.
-    //   - type: string (required, enum: ["bank", "cash"]) - The type of account.
+    //   - type: string (required, enum: ["bank"]) - The type of account.
     //   - createdAt: timestamp (optional) - When the account was created.
     //   - updatedAt: timestamp (optional) - When the account was last updated.
     //
@@ -47,8 +47,8 @@ service cloud.firestore {
     // Fields:
     //   - uid: string (required) - The owner's user ID.
     //   - name: string (required) - The name of the item.
-    //   - price: number (required) - The price of the item.
-    //   - priority: string (optional, enum: ["low", "medium", "high"]) - The priority of the item.
+    //   - targetAmount: number (required) - The target price of the item.
+    //   - savedAmount: number (required) - The amount saved so far.
     //   - createdAt: timestamp (optional) - When the item was added.
     //
     // Collection: debts
@@ -57,8 +57,16 @@ service cloud.firestore {
     //   - uid: string (required) - The owner's user ID.
     //   - personName: string (required) - The name of the person involved.
     //   - amount: number (required) - The amount owed.
-    //   - type: string (required, enum: ["owe", "owed"]) - Whether the user owes or is owed.
+    //   - description: string (optional) - What the debt is for.
+    //   - isPaid: bool (required) - Whether the debt has been settled.
     //   - createdAt: timestamp (optional) - When the debt was recorded.
+    //
+    // Collection: budgets
+    // Document ID: budgetId (uid_YYYY-MM)
+    // Fields:
+    //   - uid: string (required) - The owner's user ID.
+    //   - month: string (required) - The month in YYYY-MM format.
+    //   - amount: number (required) - The budget amount.
     //
     // ===============================================================
 
@@ -124,37 +132,47 @@ service cloud.firestore {
              data.uid is string && data.uid.size() > 0 &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.balance is number &&
-             data.type in ['bank', 'cash'] &&
+             data.type in ['bank'] &&
              (!('bankName' in data) || (data.bankName is string && data.bankName.size() < 100)) &&
              (!('upiId' in data) || (data.upiId is string && data.upiId.size() < 100)) &&
              (!('isMain' in data) || data.isMain is bool);
     }
 
     function isValidTransaction(data) {
-      return hasOnlyAllowedFields(['uid', 'accountId', 'amount', 'type', 'category', 'date', 'note', 'createdAt', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['uid', 'accountId', 'amount', 'type', 'category', 'otherCategory', 'description', 'date', 'note', 'createdAt', 'updatedAt']) &&
              data.uid is string && data.uid.size() > 0 &&
              data.accountId is string && data.accountId.size() > 0 &&
              data.amount is number &&
              data.type in ['income', 'expense', 'transfer'] &&
              data.date is timestamp &&
              (!('category' in data) || (data.category is string && data.category.size() < 100)) &&
+             (!('otherCategory' in data) || (data.otherCategory is string && data.otherCategory.size() < 100)) &&
+             (!('description' in data) || (data.description is string && data.description.size() < 500)) &&
              (!('note' in data) || (data.note is string && data.note.size() < 500));
     }
 
     function isValidWishlistItem(data) {
-      return hasOnlyAllowedFields(['uid', 'name', 'price', 'priority', 'createdAt', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['uid', 'name', 'targetAmount', 'savedAmount', 'createdAt', 'updatedAt']) &&
              data.uid is string && data.uid.size() > 0 &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.price is number && data.price >= 0 &&
-             (!('priority' in data) || data.priority in ['low', 'medium', 'high']);
+             data.targetAmount is number && data.targetAmount >= 0 &&
+             data.savedAmount is number && data.savedAmount >= 0;
     }
 
     function isValidDebt(data) {
-      return hasOnlyAllowedFields(['uid', 'personName', 'amount', 'type', 'createdAt', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['uid', 'personName', 'amount', 'description', 'isPaid', 'createdAt', 'updatedAt']) &&
              data.uid is string && data.uid.size() > 0 &&
              data.personName is string && data.personName.size() > 0 && data.personName.size() < 100 &&
              data.amount is number && data.amount >= 0 &&
-             data.type in ['owe', 'owed'];
+             data.isPaid is bool &&
+             (!('description' in data) || (data.description is string && data.description.size() < 500));
+    }
+
+    function isValidBudget(data) {
+      return hasOnlyAllowedFields(['uid', 'month', 'amount', 'createdAt', 'updatedAt']) &&
+             data.uid is string && data.uid.size() > 0 &&
+             data.month is string && data.month.matches("^\\d{4}-\\d{2}$") &&
+             data.amount is number && data.amount >= 0;
     }
 
     // ===============================================================
@@ -192,6 +210,13 @@ service cloud.firestore {
       allow read: if isDocOwner() || isAdmin();
       allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid && isValidDebt(request.resource.data);
       allow update: if isDocOwner() && isValidDebt(request.resource.data) && uidNotModified();
+      allow delete: if isDocOwner();
+    }
+
+    match /budgets/{budgetId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid && isValidBudget(request.resource.data);
+      allow update: if isDocOwner() && isValidBudget(request.resource.data) && uidNotModified();
       allow delete: if isDocOwner();
     }
   }

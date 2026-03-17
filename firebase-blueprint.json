@@ -18,7 +18,7 @@
     },
     "Account": {
       "title": "Bank Account",
-      "description": "Represents a bank or cash account.",
+      "description": "Represents a bank account.",
       "type": "object",
       "properties": {
         "uid": { "type": "string", "description": "The owner's user ID." },
@@ -27,7 +27,7 @@
         "upiId": { "type": "string", "description": "The UPI ID associated with this account." },
         "isMain": { "type": "boolean", "description": "Whether this is the primary account." },
         "balance": { "type": "number", "description": "Current balance in the account." },
-        "type": { "type": "string", "enum": ["bank", "cash"], "description": "The type of account." },
+        "type": { "type": "string", "enum": ["bank"], "description": "The type of account." },
         "createdAt": { "type": "string", "format": "date-time", "description": "When the account was created." },
         "updatedAt": { "type": "string", "format": "date-time", "description": "When the account was last updated." }
       },
@@ -43,6 +43,8 @@
         "amount": { "type": "number", "description": "The transaction amount." },
         "type": { "type": "string", "enum": ["income", "expense", "transfer"], "description": "The type of transaction." },
         "category": { "type": "string", "description": "The category of the transaction (e.g., 'Food', 'Salary')." },
+        "otherCategory": { "type": "string", "description": "The custom category if 'Others' is selected." },
+        "description": { "type": "string", "description": "A detailed description of the transaction." },
         "date": { "type": "string", "format": "date-time", "description": "The date of the transaction." },
         "note": { "type": "string", "description": "An optional note for the transaction." },
         "createdAt": { "type": "string", "format": "date-time", "description": "When the transaction was recorded." }
@@ -56,11 +58,11 @@
       "properties": {
         "uid": { "type": "string", "description": "The owner's user ID." },
         "name": { "type": "string", "description": "The name of the item." },
-        "price": { "type": "number", "description": "The price of the item." },
-        "priority": { "type": "string", "enum": ["low", "medium", "high"], "description": "The priority of the item." },
+        "targetAmount": { "type": "number", "description": "The target price of the item." },
+        "savedAmount": { "type": "number", "description": "The amount saved so far." },
         "createdAt": { "type": "string", "format": "date-time", "description": "When the item was added." }
       },
-      "required": ["uid", "name", "price"]
+      "required": ["uid", "name", "targetAmount"]
     },
     "Debt": {
       "title": "Debt",
@@ -70,17 +72,31 @@
         "uid": { "type": "string", "description": "The owner's user ID." },
         "personName": { "type": "string", "description": "The name of the person involved." },
         "amount": { "type": "number", "description": "The amount owed." },
-        "type": { "type": "string", "enum": ["owe", "owed"], "description": "Whether the user owes or is owed." },
+        "description": { "type": "string", "description": "What the debt is for." },
+        "isPaid": { "type": "boolean", "description": "Whether the debt has been settled." },
         "createdAt": { "type": "string", "format": "date-time", "description": "When the debt was recorded." }
       },
-      "required": ["uid", "personName", "amount", "type"]
+      "required": ["uid", "personName", "amount"]
+    },
+    "MonthlyBudget": {
+      "title": "Monthly Budget",
+      "description": "A spending limit for a specific month.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The owner's user ID." },
+        "month": { "type": "string", "description": "The month in YYYY-MM format." },
+        "amount": { "type": "number", "description": "The budget amount." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the budget was set." }
+      },
+      "required": ["uid", "month", "amount"]
     }
   },
   "firestore": {
     "/users/{userId}": { "schema": "UserProfile", "description": "User profiles." },
-    "/accounts/{accountId}": { "schema": "Account", "description": "Bank and cash accounts." },
+    "/accounts/{accountId}": { "schema": "Account", "description": "Bank accounts." },
     "/transactions/{transactionId}": { "schema": "Transaction", "description": "Financial transactions." },
     "/wishlist/{itemId}": { "schema": "WishlistItem", "description": "User wishlist items." },
-    "/debts/{debtId}": { "schema": "Debt", "description": "Debts and money owed." }
+    "/debts/{debtId}": { "schema": "Debt", "description": "Debts and money owed." },
+    "/budgets/{budgetId}": { "schema": "MonthlyBudget", "description": "Monthly spending budgets." }
   }
 }

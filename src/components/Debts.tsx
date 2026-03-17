@@ -148,7 +148,7 @@ export default function Debts() {
                   </button>
                   <button
                     onClick={() => deleteDebt(debt.id)}
-                    className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-all opacity-0 group-hover:opacity-100"
+                    className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-all"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>

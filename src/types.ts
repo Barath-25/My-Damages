@@ -1,7 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
 
 export type TransactionType = 'income' | 'expense' | 'transfer';
-export type PaymentMethod = 'upi' | 'cash';
+export type PaymentMethod = 'upi';
 
 export interface UserProfile {
   uid: string;

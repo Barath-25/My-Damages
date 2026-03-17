@@ -35,7 +35,7 @@ export default function App() {
   const [isLocked, setIsLocked] = useState(false);
   const [showBalance, setShowBalance] = useState(false);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
-  const [currentView, setCurrentView] = useState<View>('calendar');
+  const [currentView, setCurrentView] = useState<View>('dashboard');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -78,32 +78,22 @@ export default function App() {
 
     const q = query(collection(db, 'accounts'), where('uid', '==', user.uid));
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const accs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Account[];
+      const accs = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() })) as Account[];
+      
+      // Filter out any residual cash accounts
+      const filteredAccs = accs.filter(acc => acc.type !== 'cash');
       
       // Select main account or first account if none selected
-      if (!selectedAccountId && accs.length > 0) {
-        const mainAcc = accs.find(a => a.isMain) || accs.find(a => a.name.toLowerCase() !== 'cash') || accs[0];
+      if (!selectedAccountId && filteredAccs.length > 0) {
+        const mainAcc = filteredAccs.find(a => a.isMain) || filteredAccs[0];
         setSelectedAccountId(mainAcc.id);
       }
 
-      // Ensure a Cash account exists
-      const hasCashAccount = accs.some(acc => acc.name.toLowerCase() === 'cash');
-      if (!hasCashAccount && accs.length > 0) {
-        try {
-          await addDoc(collection(db, 'accounts'), {
-            name: 'Cash',
-            balance: 0,
-            uid: user.uid,
-            createdAt: Timestamp.now()
-          });
-        } catch (error) {
-          handleFirestoreError(error, OperationType.CREATE, 'accounts');
-        }
-      }
-
-      setAccounts(accs);
-      if (accs.length > 0 && !selectedAccountId) {
-        setSelectedAccountId(accs[0].id);
+      setAccounts(filteredAccs);
+      if (filteredAccs.length > 0 && !selectedAccountId) {
+        const mainAcc = filteredAccs.find(a => a.isMain) || filteredAccs[0];
+        setSelectedAccountId(mainAcc.id);
       }
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'accounts');
@@ -142,20 +132,12 @@ export default function App() {
       balances[acc.id] = 0;
     });
 
-    const cashAcc = accounts.find(a => a.name.toLowerCase() === 'cash');
-
     allTransactions.forEach(t => {
       if (balances[t.accountId] !== undefined) {
         if (t.type === 'income') {
           balances[t.accountId] += t.amount;
         } else if (t.type === 'expense') {
           balances[t.accountId] -= t.amount;
-        } else if (t.type === 'transfer') {
-          // Transfer is a withdrawal from bank to cash
-          balances[t.accountId] -= t.amount;
-          if (cashAcc) {
-            balances[cashAcc.id] = (balances[cashAcc.id] || 0) + t.amount;
-          }
         }
       }
     });
@@ -175,11 +157,7 @@ export default function App() {
     return accounts.find(acc => acc.id === selectedAccountId);
   }, [accounts, selectedAccountId, accountBalances]);
 
-  const cashAccount = accounts.find(a => a.name.toLowerCase() === 'cash');
-  const otherAccounts = accounts.filter(a => a.name.toLowerCase() !== 'cash');
-  
-  const totalAccountBalance = otherAccounts.reduce((acc, a) => acc + (accountBalances[a.id] || 0), 0);
-  const cashBalance = cashAccount ? (accountBalances[cashAccount.id] || 0) : 0;
+  const totalAccountBalance = accounts.reduce((acc, a) => acc + (accountBalances[a.id] || 0), 0);
 
   const [showQrModal, setShowQrModal] = useState<{ show: boolean, upiId: string, name: string }>({ show: false, upiId: '', name: '' });
 
@@ -561,15 +539,11 @@ export default function App() {
           <div className="mb-6 space-y-2">
             <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-brand-dark/40">
               <div className="flex items-center gap-2">
-                <span>Cash</span>
+                <span>Total Balance</span>
                 <button onClick={() => setShowBalance(!showBalance)} className="p-1 hover:bg-brand-bg rounded-md transition-colors">
                   {showBalance ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                 </button>
               </div>
-              <span className="text-brand-dark">{showBalance ? `₹${cashBalance.toLocaleString()}` : '••••••'}</span>
-            </div>
-            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-brand-dark/40">
-              <span>Accounts</span>
               <span className="text-brand-dark">{showBalance ? `₹${totalAccountBalance.toLocaleString()}` : '••••••'}</span>
             </div>
           </div>
@@ -659,6 +633,33 @@ export default function App() {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* Add Transaction Modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAddModal(false)}
+              className="absolute inset-0 bg-brand-dark/40 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-lg"
+            >
+              <TransactionForm 
+                accounts={accounts} 
+                selectedAccountId={selectedAccountId === 'all' ? (accounts.find(a => a.isMain)?.id || accounts[0]?.id || '') : selectedAccountId} 
+                onClose={() => setShowAddModal(false)} 
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Mobile Bottom Nav */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-black/5 p-4 flex items-center justify-around z-40">
@@ -817,34 +818,6 @@ export default function App() {
               >
                 Done
               </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Add Transaction Modal */}
-      <AnimatePresence>
-        {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowAddModal(false)}
-              className="absolute inset-0 bg-brand-dark/40 backdrop-blur-md"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 40 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 40 }}
-              className="relative w-full max-w-lg"
-            >
-              <TransactionForm 
-                accounts={accounts} 
-                selectedAccountId={selectedAccountId} 
-                cashAccount={cashAccount}
-                onClose={() => setShowAddModal(false)} 
-              />
             </motion.div>
           </div>
         )}

@@ -42,9 +42,6 @@ export default function Dashboard({ transactions, showBalance, setShowBalance }:
     const expense = transactions
       .filter(t => t.type === 'expense')
       .reduce((acc, t) => acc + t.amount, 0);
-    const transfers = transactions
-      .filter(t => t.type === 'transfer')
-      .reduce((acc, t) => acc + t.amount, 0);
     
     const monthStart = startOfMonth(new Date());
     const monthEnd = endOfMonth(new Date());
