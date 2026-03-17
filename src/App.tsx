@@ -12,7 +12,7 @@ import SecurityLogs from './components/SecurityLogs';
 import Wishlist from './components/Wishlist';
 import Debts from './components/Debts';
 import Settings from './components/Settings';
-import { LayoutDashboard, Calendar, List, Plus, LogOut, Wallet, ChevronDown, User as UserIcon, Heart, Settings as SettingsIcon, Eye, EyeOff, Menu, X, QrCode, HandCoins, Building2, Edit2, Check } from 'lucide-react';
+import { LayoutDashboard, Calendar, List, Plus, LogOut, Wallet, ChevronDown, User as UserIcon, Heart, Settings as SettingsIcon, Eye, EyeOff, Menu, X, QrCode, HandCoins, Building2, Edit2, Check, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 type View = 'dashboard' | 'calendar' | 'list' | 'wishlist' | 'debts' | 'settings';
@@ -134,6 +134,8 @@ export default function App() {
       balances[acc.id] = 0;
     });
 
+    const cashAcc = accounts.find(a => a.name.toLowerCase() === 'cash');
+
     allTransactions.forEach(t => {
       if (balances[t.accountId] !== undefined) {
         if (t.type === 'income') {
@@ -141,10 +143,11 @@ export default function App() {
         } else if (t.type === 'expense') {
           balances[t.accountId] -= t.amount;
         } else if (t.type === 'transfer') {
-          // For transfers, we assume it's adding to the account (e.g. from cash to bank)
-          // or vice versa. The logic depends on how transfers are recorded.
-          // In this app, 'transfer' is used when adding to cash.
-          balances[t.accountId] += t.amount;
+          // Transfer is a withdrawal from bank to cash
+          balances[t.accountId] -= t.amount;
+          if (cashAcc) {
+            balances[cashAcc.id] = (balances[cashAcc.id] || 0) + t.amount;
+          }
         }
       }
     });
@@ -152,10 +155,18 @@ export default function App() {
   }, [accounts, allTransactions]);
 
   const transactions = useMemo(() => {
+    if (selectedAccountId === 'all') return allTransactions;
     return allTransactions.filter(t => t.accountId === selectedAccountId);
   }, [allTransactions, selectedAccountId]);
 
-  const selectedAccount = accounts.find(a => a.id === selectedAccountId);
+  const selectedAccount = useMemo(() => {
+    if (selectedAccountId === 'all') {
+      const totalBalance = Object.values(accountBalances).reduce((a, b) => a + b, 0);
+      return { id: 'all', name: 'All Accounts', balance: totalBalance, isMain: false, uid: '' } as Account;
+    }
+    return accounts.find(acc => acc.id === selectedAccountId);
+  }, [accounts, selectedAccountId, accountBalances]);
+
   const cashAccount = accounts.find(a => a.name.toLowerCase() === 'cash');
   const otherAccounts = accounts.filter(a => a.name.toLowerCase() !== 'cash');
   
@@ -391,6 +402,23 @@ export default function App() {
                   exit={{ opacity: 0, y: 10 }}
                   className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-black/5 p-2 z-50 overflow-hidden"
                 >
+                  <button
+                    onClick={() => {
+                      setSelectedAccountId('all');
+                      setShowAccountMenu(false);
+                    }}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all mb-1 ${
+                      selectedAccountId === 'all' ? 'bg-brand-primary text-white' : 'hover:bg-brand-bg text-brand-dark'
+                    }`}
+                  >
+                    <div className="w-8 h-8 bg-brand-primary/10 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-brand-primary" />
+                    </div>
+                    <div className="text-left">
+                      <span className="text-sm font-bold block">All Accounts</span>
+                      <span className="text-[8px] uppercase tracking-widest opacity-60">Combined View</span>
+                    </div>
+                  </button>
                   {accounts.map(acc => (
                     <div key={acc.id} className="flex items-center justify-between w-full group/item">
                       <button
@@ -773,6 +801,7 @@ export default function App() {
               <TransactionForm 
                 accounts={accounts} 
                 selectedAccountId={selectedAccountId} 
+                cashAccount={cashAccount}
                 onClose={() => setShowAddModal(false)} 
               />
             </motion.div>

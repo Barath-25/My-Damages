@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 interface TransactionFormProps {
   accounts: Account[];
   selectedAccountId: string;
+  cashAccount?: Account;
   onClose?: () => void;
 }
 
@@ -16,7 +17,7 @@ const CATEGORIES = {
   expense: ['Food', 'Academics', 'Transportation', 'Others']
 };
 
-export default function TransactionForm({ accounts, selectedAccountId, onClose }: TransactionFormProps) {
+export default function TransactionForm({ accounts, selectedAccountId, cashAccount, onClose }: TransactionFormProps) {
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
@@ -32,6 +33,8 @@ export default function TransactionForm({ accounts, selectedAccountId, onClose }
 
     setLoading(true);
     try {
+      const finalAccountId = paymentMethod === 'cash' ? (cashAccount?.id || accountId) : accountId;
+      
       await addDoc(collection(db, 'transactions'), {
         amount: parseFloat(amount),
         type: paymentMethod === 'cash' && type === 'income' ? 'transfer' : type,
@@ -41,7 +44,7 @@ export default function TransactionForm({ accounts, selectedAccountId, onClose }
         date: Timestamp.fromDate(new Date(date)),
         description: category === 'Others' ? otherCategory : '',
         uid: auth.currentUser.uid,
-        accountId,
+        accountId: finalAccountId,
         createdAt: Timestamp.now()
       });
       
@@ -128,21 +131,30 @@ export default function TransactionForm({ accounts, selectedAccountId, onClose }
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Account</label>
-            <select
-              required
-              value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
-              className="w-full px-4 py-2 bg-brand-bg/30 border border-brand-accent/20 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all text-sm"
-            >
-              {accounts
-                .filter(acc => acc.name.toLowerCase() !== 'cash')
-                .map(acc => (
-                  <option key={acc.id} value={acc.id}>{acc.name}</option>
-                ))}
-            </select>
-          </div>
+          {paymentMethod === 'upi' ? (
+            <div>
+              <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Account</label>
+              <select
+                required
+                value={accountId}
+                onChange={(e) => setAccountId(e.target.value)}
+                className="w-full px-4 py-2 bg-brand-bg/30 border border-brand-accent/20 rounded-xl focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none transition-all text-sm"
+              >
+                {accounts
+                  .filter(acc => acc.name.toLowerCase() !== 'cash')
+                  .map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.name}</option>
+                  ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Account</label>
+              <div className="w-full px-4 py-2 bg-brand-bg/30 border border-brand-accent/20 rounded-xl text-sm font-bold text-brand-dark/50">
+                Cash Account
+              </div>
+            </div>
+          )}
           <div>
             <label className="block text-[10px] font-bold text-brand-dark/60 uppercase tracking-widest mb-1">Date</label>
             <input

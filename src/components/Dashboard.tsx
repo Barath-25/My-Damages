@@ -55,7 +55,7 @@ export default function Dashboard({ transactions, showBalance, setShowBalance }:
     return { 
       income, 
       expense, 
-      balance: income + transfers - expense, 
+      balance: income - expense, 
       currentMonthExpense 
     };
   }, [transactions]);
